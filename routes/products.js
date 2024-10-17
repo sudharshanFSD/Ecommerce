@@ -147,4 +147,17 @@ router.delete('/products/:productId', authToken,authRole('admin'), async (req, r
     }
 });
 
+// Route to get the latest 15 products
+router.get('/latest', async (req, res) => {
+    try {
+        const products = await Product.find()
+            .sort({ createdAt: -1 }) // Sort by createdAt in descending order
+            .limit(15);              // Limit to the latest 15 products
+        res.status(200).json(products);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
 module.exports = router;
