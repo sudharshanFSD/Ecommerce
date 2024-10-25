@@ -1,93 +1,138 @@
-const express = require('express');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const authToken = require('../middleware/authToken')
-const router = express.Router();
-require('dotenv').config();
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import {
+    AppBar,
+    Toolbar,
+    IconButton,
+    Typography,
+    InputBase,
+    Badge,
+    Menu,
+    MenuItem,
+    Button
+} from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import SearchIcon from '@mui/icons-material/Search';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import AccountCircle from '@mui/icons-material/AccountCircle';
+import axios from 'axios'; // To fetch user details
 
-// Register route 
-router.post('/register', async (req, res) => {
-    const { firstName, lastName, email, password, role, username } = req.body;
+const Navbar = () => {
+    const [anchorEl, setAnchorEl] = useState(null); // For profile menu
+    const [isLoggedIn, setIsLoggedIn] = useState(false); // Track if user is logged in
+    const [userDetails, setUserDetails] = useState({}); // To store user details
 
-    try {
-        if (!firstName || !lastName || !email || !password) {
-            return res.status(400).json({ message: 'Please fill all the fields.' });
+    // Fetch user details on component mount if token is present
+    useEffect(() => {
+        const token = localStorage.getItem('token'); // Assuming token is stored in localStorage
+        if (token) {
+            axios.get('/user/details', {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            })
+            .then(response => {
+                setUserDetails(response.data); // Store user details
+                setIsLoggedIn(true); // User is logged in
+            })
+            .catch(error => {
+                console.error('Error fetching user details:', error);
+                setIsLoggedIn(false);
+            });
         }
+    }, []);
 
-        if (!password || password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password) || !/[!@#$%^&*]/.test(password)) {
-            return res.status(400).json({ message: 'Password must be at least 8 characters long, contain letters, numbers, and special characters.' });
-        }
+    // Handle profile menu open/close
+    const handleMenuOpen = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
 
-        const existingUserByEmail = await User.findOne({ email });
-        if (existingUserByEmail) {
-            return res.status(400).json({ message: 'User already exists with this email.' });
-        }
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+    // Handle user logout
+    const handleLogout = () => {
+        localStorage.removeItem('token'); // Remove token from storage
+        setIsLoggedIn(false); // Update login state
+        setAnchorEl(null); // Close menu
+    };
 
-        // Set username to firstName if it's not provided
-        const userUsername = username || firstName;
+    return (
+        <AppBar position="static">
+            <Toolbar>
+                {/* Logo */}
+                <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                    <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>WildLens</Link>
+                </Typography>
 
-        // Create a new user
-        const newUser = new User({
-            firstName,
-            lastName,
-            email,
-            password: hashedPassword,
-            role,
-            username: userUsername
-        });
+                {/* Search Bar */}
+                <InputBase
+                    placeholder="Search…"
+                    startAdornment={<SearchIcon />}
+                    sx={{
+                        flex: 1,
+                        backgroundColor: '#fff',
+                        padding: '0 10px',
+                        borderRadius: '4px',
+                        maxWidth: '400px',
+                    }}
+                />
 
-        // Save the user to the database
-        await newUser.save();
+                {/* Cart Icon */}
+                <IconButton color="inherit" component={Link} to="/cart">
+                    <Badge badgeContent={4} color="error">
+                        <ShoppingCartIcon />
+                    </Badge>
+                </IconButton>
 
-        res.status(201).json({ message: 'User registered successfully.' });
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
+                {/* Conditional rendering based on login status */}
+                {isLoggedIn ? (
+                    <>
+                        {/* Profile Icon with Dropdown Menu */}
+                        <IconButton
+                            edge="end"
+                            color="inherit"
+                            onClick={handleMenuOpen}
+                        >
+                            <AccountCircle />
+                        </IconButton>
 
-// Login Route - Handles User Login
-router.post('/login', async (req, res) => {
-    const { email, password } = req.body;
+                        {/* Dropdown menu for profile */}
+                        <Menu
+                            anchorEl={anchorEl}
+                            open={Boolean(anchorEl)}
+                            onClose={handleMenuClose}
+                            anchorOrigin={{
+                                vertical: 'top',
+                                horizontal: 'right',
+                            }}
+                            transformOrigin={{
+                                vertical: 'top',
+                                horizontal: 'right',
+                            }}
+                        >
+                            <MenuItem>
+                                <Typography textAlign="center">Profile: {userDetails.username}</Typography>
+                            </MenuItem>
+                            <MenuItem>
+                                <Typography textAlign="center">Email: {userDetails.email}</Typography>
+                            </MenuItem>
+                            <MenuItem onClick={handleLogout}>
+                                Logout
+                            </MenuItem>
+                        </Menu>
+                    </>
+                ) : (
+                    // Show Login/Register buttons if not logged in
+                    <>
+                        <Button color="inherit" component={Link} to="/login">Login</Button>
+                        <Button color="inherit" component={Link} to="/register">Register</Button>
+                    </>
+                )}
+            </Toolbar>
+        </AppBar>
+    );
+};
 
-    try {
-        const user = await User.findOne({ email });
-
-        if (!user || !(await bcrypt.compare(password, user.password))) {
-            return res.status(400).json({ message: 'Invalid credentials' });
-        }
-
-        // Generate JWT token
-        const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-        res.json({
-            token,
-            role: user.role,
-            username: user.username 
-        });
-    } catch (error) {
-        console.error('Login error:', error.message);
-        res.status(500).json({ message: 'Server error, please try again later.' });
-    }
-});
-
-// Get user details
-router.get('/user/details', authToken, async (req, res) => {
-    try {
-        const user = await User.findById(req.user.userId);
-        
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-        res.json({ username: user.username, email: user.email });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-
-module.exports = router;
+export default Navbar;
