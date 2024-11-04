@@ -8,6 +8,7 @@ const productSchema = new mongoose.Schema({
     stock: { type: Number, required: true },
     images: [String],
     videos: [String],
+    salesCount: { type: Number, default: 0 }, // New field to track the number of sales
     reviews: [{
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         comment: { type: String },
