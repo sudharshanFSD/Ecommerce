@@ -166,7 +166,7 @@ router.get('/best-selling', async (req, res) => {
     try {
         const bestSellingProducts = await Product.find()
             .sort({ salesCount: -1 }) // Sort by salesCount in descending order
-            .limit(10);               // Limit to the top 10 best-selling products
+            .limit(4);               // Limit to the top 10 best-selling products
         res.status(200).json(bestSellingProducts);
     } catch (error) {
         console.error(error);
