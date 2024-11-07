@@ -13,7 +13,7 @@ const upload = multer({ storage });
 
 router.post('/products', authToken,authRole('admin'), upload.array('media'), async (req, res) => {
     
-    const { title, description, category, price, stock } = req.body;
+    const { title, description, category, price, stock,sizes,colors } = req.body;
 
     try {
         // Check if files are present
@@ -46,7 +46,9 @@ router.post('/products', authToken,authRole('admin'), upload.array('media'), asy
             price,
             stock,
             images: mediaUrls.filter(url => url.endsWith('.jpg') || url.endsWith('.png')),
-            videos: mediaUrls.filter(url => url.endsWith('.mp4') || url.endsWith('.mov'))
+            videos: mediaUrls.filter(url => url.endsWith('.mp4') || url.endsWith('.mov')),
+            sizes,
+            colors,
         });
 
         // Save product to database
