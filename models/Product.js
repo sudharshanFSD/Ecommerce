@@ -8,6 +8,8 @@ const productSchema = new mongoose.Schema({
     stock: { type: Number, required: true },
     images: [String],
     videos: [String],
+    sizes: [{ type: String }], // Available sizes
+    colors: [{ type: String }], // Available colors
     salesCount: { type: Number, default: 0 }, // New field to track the number of sales
     reviews: [{
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
