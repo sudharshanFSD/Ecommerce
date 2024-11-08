@@ -1,4 +1,3 @@
-// orderRoutes.js (Backend)
 const express = require('express');
 const router = express.Router();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); // Use your secret key here
@@ -11,6 +10,11 @@ router.post('/order', authToken, async (req, res) => {
   const { paymentMethodId, shippingAddress } = req.body;
 
   try {
+    // Validate shipping address
+    if (!shippingAddress || !shippingAddress.address || !shippingAddress.city || !shippingAddress.postalCode || !shippingAddress.country) {
+      return res.status(400).json({ message: 'Shipping address is incomplete' });
+    }
+
     // Fetch cart details for the user
     const cart = await Cart.findOne({ user: req.user.userId }).populate('products.product');
     if (!cart || cart.products.length === 0) {
@@ -27,15 +31,14 @@ router.post('/order', authToken, async (req, res) => {
       };
     });
 
+    // Create a payment intent on Stripe
     const paymentIntent = await stripe.paymentIntents.create({
-        amount: totalPrice * 100, // Amount in cents
-        currency: 'usd',
-        payment_method: paymentMethodId,
-        confirm: true,
-        automatic_payment_methods: { enabled: true, allow_redirects: 'never' }, // Disable redirects
-      });
-      
-      
+      amount: totalPrice * 100, // Amount in cents
+      currency: 'usd',
+      payment_method: paymentMethodId,
+      confirm: true,
+      automatic_payment_methods: { enabled: true, allow_redirects: 'never' }, // Disable redirects
+    });
 
     // Create order in the database
     const newOrder = new Order({
