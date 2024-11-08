@@ -27,14 +27,15 @@ router.post('/order', authToken, async (req, res) => {
       };
     });
 
-    // Create a payment intent on Stripe
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: totalPrice * 100, // Amount in cents
-      currency: 'usd',
-      payment_method: paymentMethodId,
-      confirm: true,
-      automatic_payment_methods: { enabled: true },
-    });
+        amount: totalPrice * 100, // Amount in cents
+        currency: 'usd',
+        payment_method: paymentMethodId,
+        confirm: true,
+        automatic_payment_methods: { enabled: true, allow_redirects: 'never' }, // Disable redirects
+      });
+      
+      
 
     // Create order in the database
     const newOrder = new Order({
