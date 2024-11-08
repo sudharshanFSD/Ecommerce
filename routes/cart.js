@@ -61,7 +61,6 @@ router.post('/cart', authToken, async (req, res) => {
     }
 });
 
-
 // Get cart for user
 router.get('/cart', authToken, async (req, res) => {
     try {
