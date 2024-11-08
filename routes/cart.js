@@ -4,7 +4,7 @@ const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const authToken = require('../middleware/authToken');
 
-// Add product to cart
+// Add product to cart or update quantity if it already exists
 router.post('/cart', authToken, async (req, res) => {
     const { productId, quantity, size, color } = req.body;
 
@@ -32,21 +32,35 @@ router.post('/cart', authToken, async (req, res) => {
         );
 
         if (existingProductIndex > -1) {
-            // If it exists, update the quantity
-            cart.products[existingProductIndex].quantity += quantity;
+            // If it exists, update the quantity and recalculate price
+            cart.products[existingProductIndex].quantity = quantity;
+
+            // Recalculate the total price for the product
+            const updatedPrice = product.price * quantity;
+
+            // Update the total price for the product in the cart
+            cart.products[existingProductIndex].totalPrice = updatedPrice;
         } else {
             // Otherwise, add the product with the provided size and color
-            cart.products.push({ product: productId, quantity, size, color });
+            const newProduct = {
+                product: productId,
+                quantity,
+                size,
+                color,
+                totalPrice: product.price * quantity // Initial price based on quantity
+            };
+            cart.products.push(newProduct);
         }
 
         await cart.save();
-        res.status(200).json({ message: 'Product added to cart', cart });
+        res.status(200).json({ message: 'Product added/updated in cart', cart });
 
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
     }
 });
+
 
 // Get cart for user
 router.get('/cart', authToken, async (req, res) => {
