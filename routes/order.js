@@ -11,10 +11,7 @@ router.post('/order', authToken, async (req, res) => {
 
   try {
     // Validate shipping address
-    if (!shippingAddress || !shippingAddress.address || !shippingAddress.city || !shippingAddress.postalCode || !shippingAddress.country) {
-      return res.status(400).json({ message: 'Shipping address is incomplete' });
-    }
-
+   
     // Fetch cart details for the user
     const cart = await Cart.findOne({ user: req.user.userId }).populate('products.product');
     if (!cart || cart.products.length === 0) {
