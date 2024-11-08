@@ -61,7 +61,6 @@ router.post('/order', authToken, async (req, res) => {
 
 
 
-
 // Get all orders for a user
 router.get('/order', authToken, async (req, res) => {
     try {
@@ -113,5 +112,34 @@ router.delete('/order/:orderId', authToken, async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+router.post('/create-checkout-session', async (req, res) => {
+  const session = await stripe.checkout.sessions.create({
+    line_items: [
+      {
+        // Provide the exact Price ID (for example, pr_1234) of the product you want to sell
+        price: '{{PRICE_ID}}',
+        quantity: 1,
+      },
+    ],
+    mode: 'payment',
+    success_url: `${YOUR_DOMAIN}?success=true`,
+    cancel_url: `${YOUR_DOMAIN}?canceled=true`,
+});
+
+  res.redirect(303, session.url);
+});
+
 
 module.exports = router;
