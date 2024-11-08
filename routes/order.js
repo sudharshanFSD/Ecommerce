@@ -7,12 +7,11 @@ const authToken = require('../middleware/authToken');
 require('dotenv').config();
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY); // Initialize Stripe
 
-// Place an order with Stripe payment
 router.post('/order', authToken, async (req, res) => {
     const { paymentMethodId, shippingAddress } = req.body;
 
     try {
-        const cart = await Cart.findOne({ user: req.user.userId }).populate('products.product'); // Use req.user.userId
+        const cart = await Cart.findOne({ user: req.user.userId }).populate('products.product');
         if (!cart || cart.products.length === 0) {
             return res.status(400).json({ message: 'Your cart is empty' });
         }
@@ -33,13 +32,12 @@ router.post('/order', authToken, async (req, res) => {
             payment_method: paymentMethodId,
             confirm: true,
             automatic_payment_methods: {
-                enabled: true,
-                allow_redirects: 'never'
+                enabled: true
             }
         });
 
         const newOrder = new Order({
-            user: req.user.userId, // Use req.user.userId
+            user: req.user.userId,
             products,
             totalPrice,
             paymentInfo: {
@@ -47,24 +45,20 @@ router.post('/order', authToken, async (req, res) => {
                 status: paymentIntent.status,
                 method: paymentIntent.payment_method
             },
-            shippingAddress // This will now be an object
+            shippingAddress
         });
 
         await newOrder.save();
 
-        // Clear the cart after the order is placed
-        await Cart.findOneAndDelete({ user: req.user.userId }); // Use req.user.userId
+        await Cart.findOneAndDelete({ user: req.user.userId });
 
         res.status(201).json({ message: 'Order placed successfully', order: newOrder });
-
     } catch (error) {
         console.error(error);
-        if (error.type === 'StripeCardError') {
-            return res.status(400).json({ message: 'Payment failed', error: error.message });
-        }
         res.status(500).json({ message: 'Server error' });
     }
 });
+
 
 
 
