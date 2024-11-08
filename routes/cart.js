@@ -78,6 +78,54 @@ router.get('/cart', authToken, async (req, res) => {
     }
 });
 
+// Update product quantity in the cart by size and color
+router.put('/cart/:productId', authToken, async (req, res) => {
+    const { productId } = req.params;
+    const { quantity, size, color } = req.body;
+
+    // Validate that quantity, size, and color are provided
+    if (!quantity || !size || !color) {
+        return res.status(400).json({ message: 'Quantity, size, and color are required' });
+    }
+
+    try {
+        // Find the user's cart
+        const cart = await Cart.findOne({ user: req.user.userId });
+        if (!cart) {
+            return res.status(404).json({ message: 'Cart not found' });
+        }
+
+        // Find the product in the cart based on productId, size, and color
+        const productIndex = cart.products.findIndex(p => 
+            p.product.toString() === productId && p.size === size && p.color === color
+        );
+
+        if (productIndex === -1) {
+            return res.status(404).json({ message: 'Product not found in cart' });
+        }
+
+        // Update the quantity of the product in the cart
+        cart.products[productIndex].quantity = quantity;
+
+        // Recalculate the total price for the product based on the updated quantity
+        const product = await Product.findById(productId); // Fetch the product to get its price
+        const updatedPrice = product.price * quantity;
+
+        // Update the total price for the product in the cart
+        cart.products[productIndex].totalPrice = updatedPrice;
+
+        // Save the updated cart
+        await cart.save();
+
+        res.status(200).json({ message: 'Product quantity updated in cart', cart });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+
 // Remove a product from cart by size and color
 router.delete('/cart/:productId', authToken, async (req, res) => {
     const { productId } = req.params;
