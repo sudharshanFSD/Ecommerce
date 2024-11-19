@@ -10,7 +10,7 @@ const authRole = require('../middleware/authRole')
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-
+//Add Products
 router.post('/products', authToken,authRole('admin'), upload.array('media'), async (req, res) => {
     
     const { title, description, category, price, stock,sizes,colors } = req.body;
@@ -86,29 +86,27 @@ router.get('/products/:productId', async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
-
 // UPDATE a product by ID with Cloudinary (Protected Route)
-router.put('/products/:productId',authToken,authRole('admin'), upload.array('media'), async (req, res) => {
+router.put('/products/:productId', authToken, authRole('admin'), upload.array('media'), async (req, res) => {
     const { productId } = req.params;
     const { title, description, category, price, stock } = req.body;
 
     try {
-              // Find the package by ID
-              const product = await Product.findById(productId);
-              if (!product) {
-                  return res.status(404).json({ message: 'Product not found' });
-              }
-      
- // Updating fields if they exist in the request
- if (title) product.title = title;
- if (description) product.description = description;
- if (price) product.price = price;
- if (category) product.category = category;
- if (stock) product.stock = stock;
+        // Find the package by ID
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
 
+        // Update fields if they exist in the request
+        if (title) product.title = title;
+        if (description) product.description = description;
+        if (price) product.price = price;
+        if (category) product.category = category;
+        if (stock) product.stock = stock;
 
-         // If new media files are provided, replacing the existing ones
-         if (req.files && req.files.length > 0) {
+        // If new media files are provided, replacing the existing ones
+        if (req.files && req.files.length > 0) {
             const mediaUrls = await Promise.all(req.files.map(async (file) => {
                 return new Promise((resolve, reject) => {
                     const uploadStream = cloudinary.uploader.upload_stream({ resource_type: 'auto' },
@@ -124,6 +122,8 @@ router.put('/products/:productId',authToken,authRole('admin'), upload.array('med
             product.images = mediaUrls.filter(url => url.endsWith('.jpg') || url.endsWith('.png'));
             product.videos = mediaUrls.filter(url => url.endsWith('.mp4') || url.endsWith('.mov'));
         }
+
+        // Save updated product
         const updatedProduct = await product.save();
 
         res.status(200).json({ message: 'Product updated successfully', product: updatedProduct });
@@ -132,6 +132,7 @@ router.put('/products/:productId',authToken,authRole('admin'), upload.array('med
         res.status(500).json({ message: 'Server error' });
     }
 });
+
 
 // DELETE a product by ID (Protected Route)
 router.delete('/products/:productId', authToken,authRole('admin'), async (req, res) => {
@@ -159,6 +160,25 @@ router.get('/latest', async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// Search for products by exact title match
+router.get('/products/search', async (req, res) => {
+    const { term } = req.query;
+
+    try {
+        const products = await Product.find({
+            title: { 
+                $regex: `^${term}$`, // Matches the exact title (case-insensitive)
+                $options: 'i', // Case-insensitive search
+            },
+        });
+
+        res.status(200).json(products);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 

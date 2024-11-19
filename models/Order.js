@@ -16,7 +16,7 @@ const orderSchema = new mongoose.Schema({
             quantity: { type: Number, required: true },
             price: { type: Number, required: true },
             size: { type: String },  // Optional size field
-            color: { type: String } ,
+            color: { type: String },
         }
     ],
     totalPrice: { type: Number, required: true },
@@ -25,7 +25,7 @@ const orderSchema = new mongoose.Schema({
         status: { type: String, required: true },
         method: { type: String, required: true }
     },
-    shippingAddress: { type: shippingAddressSchema, required: true }, // Use the embedded schema here
+    shippingAddress: { type: shippingAddressSchema, required: true },
     createdAt: { type: Date, default: Date.now }
 });
 
