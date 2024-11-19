@@ -52,8 +52,8 @@ router.post('/create-checkout-session', authToken, async (req, res) => {
             payment_method_types: ['card'],
             line_items: lineItems,  // Use lineItems without metadata
             mode: 'payment',
-            success_url: `http://localhost:5173/CheckoutResult?status=success&session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `http://localhost:5173/CheckoutResult?status=cancel`,
+            success_url: `https://wildcart.netlify.app/CheckoutResult?status=success&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `https://wildcart.netlify.app/CheckoutResult?status=cancel`,
         });
 
         // Respond with the URL for the Stripe checkout session
